@@ -1,0 +1,6 @@
+{
+  "name": "Pujo Asche - Mahalaya",
+  "description": "A nostalgic, immersive Bengali cultural experience for Durga Puja and Mahalaya.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
