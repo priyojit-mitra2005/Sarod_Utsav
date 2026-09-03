@@ -1,8 +1,6 @@
 # 🪔 Sarod Utsav — Pujo Asche | Mahalaya
 
-<p align="center">
-  <img src="src/assets/images/mahalaya_nostalgia_1786888185454.jpg" alt="Sarod Utsav — Pujo Asche Mahalaya" width="100%">
-</p>
+<img width="1267" height="711" alt="image" src="https://github.com/user-attachments/assets/c5e5e9e9-d6bc-4cd6-9394-810f3463fde2" />
 
 <p align="center">
   <strong>An immersive Bengali cultural experience celebrating Mahalaya, Durga Puja, nostalgia, music, traditions, and the spirit of Sarod Utsav.</strong>
