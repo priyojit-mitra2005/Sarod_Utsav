@@ -11,6 +11,7 @@ import {
   ChevronDown,
   Menu,
   X,
+  Camera,
 } from 'lucide-react';
 import { ShiuliInteraction } from './components/ShiuliInteraction';
 import { Quotes } from './components/Quotes';
@@ -23,21 +24,32 @@ import { SongsSection } from './components/SongsSection';
 import { DhakSoundboard } from './components/DhakSoundboard';
 import { PujoScheduleSection } from './components/PujoScheduleSection';
 import { NostalgiaSection } from './components/NostalgiaSection';
+import { CommunityThoughtsSection } from './components/CommunityThoughtsSection';
 import { soundEngine } from './utils/audioEngine';
+import { musicState, DHAK_SPECIAL_YT_ID } from './utils/musicState';
 import { calculateCountdown, toBengaliDigits, CountdownTime } from './utils/countdown';
 import bgImage from './assets/images/mahalaya_nostalgia_1786888185454.jpg';
 
 export default function App() {
-  const [isDhakActive, setIsDhakActive] = useState(false);
+  const [musicStateData, setMusicStateData] = useState(musicState.getState());
+  const [isLiveDhakPlaying, setIsLiveDhakPlaying] = useState(false);
   const [isConchPlaying, setIsConchPlaying] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isGreetingOpen, setIsGreetingOpen] = useState(false);
   const [countdown, setCountdown] = useState<CountdownTime>(calculateCountdown());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Subscribe to Dhaak state from sound engine
+  // Subscribe to live synthesized Dhak state
   useEffect(() => {
-    const unsubscribe = soundEngine.subscribeDhakState(setIsDhakActive);
+    const unsubDhak = soundEngine.subscribeDhakState(setIsLiveDhakPlaying);
+    return () => unsubDhak();
+  }, []);
+
+  // Subscribe to music state changes
+  useEffect(() => {
+    const unsubscribe = musicState.subscribe(() => {
+      setMusicStateData(musicState.getState());
+    });
     return () => {
       unsubscribe();
     };
@@ -51,9 +63,19 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  const toggleDhak = (e: MouseEvent) => {
+  const isDhakActive =
+    isLiveDhakPlaying ||
+    (musicStateData.currentTrack.youtubeId === DHAK_SPECIAL_YT_ID && musicStateData.isPlaying);
+
+  const toggleDhak = async (e: MouseEvent) => {
     e.stopPropagation();
-    soundEngine.toggleDhaakRhythm();
+    if (isLiveDhakPlaying) {
+      soundEngine.stopDhaakRhythm();
+    } else {
+      await soundEngine.resume();
+      soundEngine.startDhaakRhythm();
+      musicState.playDhakTrack();
+    }
   };
 
   const playShankhaSound = (e: MouseEvent) => {
@@ -84,10 +106,10 @@ export default function App() {
         <img
           src={bgImage}
           alt="Mahalaya Nostalgia Background"
-          className="w-full h-full object-cover opacity-25 mix-blend-screen scale-105"
+          className="w-full h-full object-cover opacity-50 mix-blend-screen scale-105 transition-opacity duration-700"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#160c07]/90 via-[#0a070e]/85 to-[#050407]/95" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,rgba(245,158,11,0.18)_0%,transparent_60%)]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#160c07]/75 via-[#0a070e]/68 to-[#050407]/82" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,rgba(245,158,11,0.24)_0%,transparent_65%)]" />
       </div>
 
       {/* Swaying Kash Phool at bottom of hero viewport */}
@@ -109,7 +131,7 @@ export default function App() {
             </div>
             <div>
               <span className="font-serif text-lg sm:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-orange-300 to-amber-400">
-                পুজো আসছে
+                শিউলিঝরা আগমনী
               </span>
               <span className="hidden sm:inline-block text-[10px] text-white/50 ml-2 tracking-wider">
                 মহালয়া ও শারদোৎসব
@@ -121,30 +143,37 @@ export default function App() {
           <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold text-white/70">
             <button
               onClick={() => scrollToSection('hero')}
-              className="hover:text-amber-300 transition-colors"
+              className="hover:text-amber-300 transition-colors cursor-pointer"
             >
               মূল সূচনা
             </button>
             <button
               onClick={() => scrollToSection('songs')}
-              className="hover:text-amber-300 transition-colors flex items-center gap-1.5"
+              className="hover:text-amber-300 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Music size={13} className="text-orange-400" />
               <span>শারদ সুর ও গান</span>
             </button>
             <button
               onClick={() => scrollToSection('schedule')}
-              className="hover:text-amber-300 transition-colors flex items-center gap-1.5"
+              className="hover:text-amber-300 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Calendar size={13} className="text-orange-400" />
               <span>পূজোর নির্ঘণ্ট</span>
             </button>
             <button
               onClick={() => scrollToSection('nostalgia')}
-              className="hover:text-amber-300 transition-colors flex items-center gap-1.5"
+              className="hover:text-amber-300 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Heart size={13} className="text-orange-400" />
               <span>আবেগ ও স্মৃতি</span>
+            </button>
+            <button
+              onClick={() => scrollToSection('thoughts')}
+              className="hover:text-amber-300 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Camera size={13} className="text-orange-400" />
+              <span>স্মৃতি ও ভাবনা</span>
             </button>
           </nav>
 
@@ -236,6 +265,13 @@ export default function App() {
               <Heart size={14} className="text-orange-400" />
               <span>আবেগ ও স্মৃতি (Memories)</span>
             </button>
+            <button
+              onClick={() => scrollToSection('thoughts')}
+              className="text-left py-2 px-3 rounded-lg hover:bg-white/5 flex items-center gap-2"
+            >
+              <Camera size={14} className="text-orange-400" />
+              <span>স্মৃতি ও ভাবনা (Memories & Thoughts)</span>
+            </button>
           </div>
         )}
       </header>
@@ -256,8 +292,8 @@ export default function App() {
           </div>
 
           {/* Main Hero Bengali Title */}
-          <h1 className="font-serif text-6xl sm:text-8xl md:text-9xl lg:text-[130px] font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-[#fffaf0] via-[#fcd34d] to-[#d97706] leading-none drop-shadow-[0_6px_35px_rgba(245,158,11,0.35)]">
-            পুজো আসছে
+          <h1 className="font-serif text-5xl sm:text-7xl md:text-8xl lg:text-[112px] font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-[#fffaf0] via-[#fcd34d] to-[#d97706] leading-tight drop-shadow-[0_6px_35px_rgba(245,158,11,0.35)]">
+            শিউলিঝরা আগমনী
           </h1>
 
           {/* Subtitle */}
@@ -324,7 +360,7 @@ export default function App() {
         {/* Scroll down indicator */}
         <button
           onClick={() => scrollToSection('songs')}
-          className="mt-6 flex flex-col items-center gap-1.5 text-xs text-white/40 hover:text-white/80 transition-colors animate-bounce"
+          className="mt-6 flex flex-col items-center gap-1.5 text-xs text-white/40 hover:text-white/80 transition-colors animate-bounce cursor-pointer"
         >
           <span>নিচে স্ক্রোল করুন ও গান শুনুন</span>
           <ChevronDown size={16} />
@@ -340,10 +376,13 @@ export default function App() {
       </div>
 
       {/* SECTION 3: PUJOR NIRGHONTO (DETAILED SCHEDULE & RITUALS) */}
-      <PujoScheduleSection />
+      <PujoScheduleSection onOpenCalendarModal={() => setIsCalendarOpen(true)} />
 
       {/* SECTION 4: NOSTALGIA & TRADITIONS */}
       <NostalgiaSection />
+
+      {/* SECTION 4.5: COMMUNITY DURGA PUJA THOUGHTS & PHOTOS */}
+      <CommunityThoughtsSection />
 
       {/* SECTION 5: FESTIVE GREETINGS BANNER */}
       <section className="w-full max-w-5xl mx-auto px-4 sm:px-8 py-12 relative z-20">
@@ -353,14 +392,14 @@ export default function App() {
               🪔
             </span>
             <h3 className="font-serif text-2xl sm:text-4xl font-bold text-amber-100 mb-2">
-              কাছের মানুষদের শারদীয়া শুভেচ্ছা পাঠান
+              প্রিয়জনদের শারদ শুভেচ্ছা প্রেরণ
             </h3>
             <p className="font-serif text-xs sm:text-sm italic text-white/70 mb-6 leading-relaxed">
               আপনার নাম দিয়ে সুন্দর শারদ বার্তা তৈরি করুন এবং হোয়াটসঅ্যাপ বা সোশ্যাল মিডিয়ায় প্রিয়জনদের সাথে শেয়ার করুন।
             </p>
             <button
               onClick={() => setIsGreetingOpen(true)}
-              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-black font-bold text-sm inline-flex items-center gap-2 shadow-xl shadow-orange-500/25 hover:scale-105 active:scale-95 transition-all"
+              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-black font-bold text-sm inline-flex items-center gap-2 shadow-xl shadow-orange-500/25 hover:scale-105 active:scale-95 transition-all cursor-pointer"
             >
               <Share2 size={16} />
               <span>শুভেচ্ছা কার্ড তৈরি করুন ও পাঠান</span>
@@ -370,16 +409,26 @@ export default function App() {
       </section>
 
       {/* FOOTER */}
-      <footer className="w-full border-t border-white/10 pt-8 pb-4 px-4 text-center text-xs text-white/40 relative z-20">
-        <p className="font-serif text-sm text-orange-200/80 mb-1">
-          শুভ মহালয়া ও শুভ শারদীয়ার আন্তরিক প্রীতি ও শুভেচ্ছা
-        </p>
-        <p className="text-[11px] text-white/50">
-          মা আসছেন... ঢাকের আওয়াজে আর কাশফুলের শুভ্রতায় ভরে উঠুক ধরণী। আসছে বছর আবার হবে!
-        </p>
-        <p className="text-[10px] text-white/30 mt-3 font-mono">
-          Pujo Asche — Mahalaya & Durga Puja Experience
-        </p>
+      <footer className="w-full border-t border-white/10 pt-10 pb-6 px-4 text-center text-xs text-white/40 relative z-20 bg-black/40 backdrop-blur-md">
+        <div className="max-w-4xl mx-auto flex flex-col items-center">
+          <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center font-serif text-black font-extrabold text-sm shadow-md mb-3">
+            পু
+          </div>
+          <p className="font-serif text-base text-orange-200/90 mb-1 font-semibold">
+            শুভ মহালয়া ও শুভ শারদীয়ার আন্তরিক প্রীতি ও শুভেচ্ছা
+          </p>
+          <p className="text-xs text-white/60 max-w-xl leading-relaxed">
+            মা আসছেন... ঢাকের আওয়াজে আর কাশফুলের শুভ্রতায় ভরে উঠুক ধরণী। আসছে বছর আবার হবে!
+          </p>
+          <div className="mt-5 pt-4 border-t border-white/10 w-full flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-white/50">
+            <span className="font-mono text-amber-300/80">
+              Pujo Asche — শিউলিঝরা আগমনী
+            </span>
+            <span className="font-medium text-orange-200/90 tracking-wide">
+              Copyright reserved to Priyojit Mitra 2026
+            </span>
+          </div>
+        </div>
       </footer>
 
       {/* Floating Sticky Music Dock Player */}

@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { Calendar, Sparkles, Clock, Copy, Check, ChevronDown, ChevronUp, BookOpen } from 'lucide-react';
 import { getUpcomingSchedule, toBengaliDigits } from '../utils/countdown';
 
-export function PujoScheduleSection() {
+interface PujoScheduleSectionProps {
+  onOpenCalendarModal?: () => void;
+}
+
+export function PujoScheduleSection({ onOpenCalendarModal }: PujoScheduleSectionProps) {
   const { year, events } = getUpcomingSchedule();
   const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
   const [copiedMantraIdx, setCopiedMantraIdx] = useState<number | null>(null);
@@ -41,6 +45,18 @@ export function PujoScheduleSection() {
         <p className="font-serif text-sm sm:text-base italic text-orange-100/70 max-w-2xl mx-auto mt-2.5">
           মহালয়া থেকে বিজয়া দশমী — প্রতিটি পূজার শুভ মুহূর্ত, প্রাচীন রীতিনীতি ও পবিত্র স্তোত্র
         </p>
+
+        {onOpenCalendarModal && (
+          <div className="mt-5 flex justify-center">
+            <button
+              onClick={onOpenCalendarModal}
+              className="px-5 py-2.5 rounded-2xl bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-200 text-xs font-semibold inline-flex items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-lg shadow-orange-950/40"
+            >
+              <Calendar size={14} className="text-orange-400" />
+              <span>পূর্ণাঙ্গ তিথি পঞ্জিকা মোডাল খুলুন (View Full Calendar Modal)</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Grid of Schedule Cards */}

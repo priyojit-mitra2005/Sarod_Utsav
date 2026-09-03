@@ -82,13 +82,18 @@ export const PUJA_SCHEDULE_MAP: Record<
 
 export function getUpcomingSchedule(now = new Date()): { year: number; events: PujaEvent[] } {
   const currentYear = now.getFullYear();
-  const yearData = PUJA_SCHEDULE_MAP[currentYear] || PUJA_SCHEDULE_MAP[2026];
+  let yearData = PUJA_SCHEDULE_MAP[currentYear];
 
-  const events: PujaEvent[] = [
+  // If no data for current year, fallback to 2026 or latest available
+  if (!yearData) {
+    yearData = PUJA_SCHEDULE_MAP[2026];
+  }
+
+  const buildEventsForYear = (y: number, data: typeof PUJA_SCHEDULE_MAP[number]): PujaEvent[] => [
     {
       nameBn: 'মহালয়া (Mahalaya)',
       nameEn: 'Mahalaya',
-      dateStr: yearData.mahalaya,
+      dateStr: data.mahalaya,
       tithiBn: 'সর্বপিতৃ অমাবস্যা তিথি',
       timeSlotBn: 'ভোর ৪:০০ টে থেকে সারা দিনব্যাপী',
       descriptionBn: 'দেবীপক্ষের শুভ সূচনা ও পিতৃপক্ষের অবসান। কাকভোরে বীরেন্দ্রকৃষ্ণ ভদ্রের জাদুকরী কণ্ঠে মহিষাসুরমর্দিনী চণ্ডীপাঠ ও গঙ্গাবক্ষে পূর্বপুরুষদের তর্পণ নিবেদন।',
@@ -105,7 +110,7 @@ export function getUpcomingSchedule(now = new Date()): { year: number; events: P
     {
       nameBn: 'মহা পঞ্চমী (Maha Panchami)',
       nameEn: 'Maha Panchami',
-      dateStr: yearData.panchami,
+      dateStr: data.panchami,
       tithiBn: 'শুক্লা পঞ্চমী তিথি',
       timeSlotBn: 'সন্ধ্যা আরতি ও বোধন প্রস্তুতি',
       descriptionBn: 'শারদোৎসবের আনন্দ মুখর সূচনা। দূর-দূরান্ত থেকে দর্শনার্থীদের মণ্ডপ পরিক্রমা শুরু, আলো ঝলমলে কলকাতা ও বিশ্বজুড়ে বাঙালির উৎসবের আমেজ।',
@@ -121,7 +126,7 @@ export function getUpcomingSchedule(now = new Date()): { year: number; events: P
     {
       nameBn: 'মহা ষষ্ঠী (Maha Sasthi)',
       nameEn: 'Maha Sasthi',
-      dateStr: yearData.sasthi,
+      dateStr: data.sasthi,
       tithiBn: 'শুক্লা ষষ্ঠী তিথি',
       timeSlotBn: 'সায়ংকালে দেবীর আমন্ত্রণ ও অধিবাস',
       descriptionBn: 'বোধন, আমন্ত্রণ ও অধিবাস। বেলগাছের (বিল্ববৃক্ষ) নিচে ঘট স্থাপন করে মর্ত্যে দেবীকে সাদর আমন্ত্রণ। উলুধ্বনি ও শঙ্খধ্বনিতে মুখরিত চতুর্দিক।',
@@ -138,7 +143,7 @@ export function getUpcomingSchedule(now = new Date()): { year: number; events: P
     {
       nameBn: 'মহা সপ্তমী (Maha Saptami)',
       nameEn: 'Maha Saptami',
-      dateStr: yearData.saptami,
+      dateStr: data.saptami,
       tithiBn: 'শুক্লা সপ্তমী তিথি',
       timeSlotBn: 'ভোরবেলায় নবপত্রিকা প্রবেশ ও স্নান',
       descriptionBn: 'ভোরের আলো ফুটতেই গঙ্গাতীরে নবপত্রিকা বা "কলাবউ" স্নান। নয়টি পবিত্র উদ্ভিদের সমাহারে প্রকৃতির রূপিনী দেবী দুর্গার প্রাণপ্রতিষ্ঠা ও মূল পূজা আরম্ভ।',
@@ -155,7 +160,7 @@ export function getUpcomingSchedule(now = new Date()): { year: number; events: P
     {
       nameBn: 'মহা অষ্টমী (Maha Ashtami)',
       nameEn: 'Maha Ashtami',
-      dateStr: yearData.ashtami,
+      dateStr: data.ashtami,
       tithiBn: 'মহাষ্টমী ও অষ্টমী-নবমী সন্ধিক্ষণ',
       timeSlotBn: 'সকাল ১০টায় অঞ্জলি • রাতে মহা সন্ধিপূজা',
       descriptionBn: 'শারদোৎসবের সবচেয়ে ভক্তিঘন দিন। সকালে নতুন শাড়ি-পাঞ্জাবিতে ভক্তিভরে পুষ্পাঞ্জলি। দুপুরে কুমারী পূজা এবং অষ্টমী ও নবমীর মিলনক্ষণে ১০৮ পদ্ম ও ১০৮ মাটির প্রদীপে অলৌকিক সন্ধিপূজা।',
@@ -172,7 +177,7 @@ export function getUpcomingSchedule(now = new Date()): { year: number; events: P
     {
       nameBn: 'মহা নবমী (Maha Nabami)',
       nameEn: 'Maha Nabami',
-      dateStr: yearData.nabami,
+      dateStr: data.nabami,
       tithiBn: 'শুক্লা নবমী তিথি',
       timeSlotBn: 'দুপুরে নবমী হোম • সন্ধ্যায় ধুনুচি নাচ',
       descriptionBn: 'মহিষাসুরমর্দিনীর চূড়ান্ত বিজয়। পবিত্র নবমী যজ্ঞের আগুন আর সন্ধ্যায় কাঁসর-ঘণ্টার উন্মাতাল ছন্দে ধুনুচি নাচ। উৎসবের আনন্দে বিষাদের মৃদু সুর।',
@@ -189,7 +194,7 @@ export function getUpcomingSchedule(now = new Date()): { year: number; events: P
     {
       nameBn: 'বিজয়া দশমী (Bijoya Dashami)',
       nameEn: 'Bijoya Dashami',
-      dateStr: yearData.dashami,
+      dateStr: data.dashami,
       tithiBn: 'শুক্লা দশমী তিথি',
       timeSlotBn: 'সকালে অপরাজিতা পূজা • বিকেলে বিসর্জন',
       descriptionBn: 'মাকে বিদায় জানানোর ক্ষণ। বিবাহিত নারীদের সিঁদুর খেলা, দেবীর বরণ, মিষ্টিমুখ। গঙ্গায় প্রতিমা বিসর্জনের সাথে সাথেই ধ্বনিত হয় "আসছে বছর আবার হবে!"। শুভ বিজয়ার আন্তরিক কোলাকুলি ও আশীর্বাদ।',
@@ -205,13 +210,27 @@ export function getUpcomingSchedule(now = new Date()): { year: number; events: P
     },
   ];
 
-  return { year: currentYear, events };
+  let activeYear = currentYear;
+  let events = buildEventsForYear(activeYear, yearData);
+
+  // Check if all events for this year have already passed
+  const nowMs = now.getTime();
+  const lastEventMs = new Date(events[events.length - 1].dateStr).getTime();
+  if (nowMs > lastEventMs) {
+    const nextYear = currentYear + 1;
+    const nextYearData = PUJA_SCHEDULE_MAP[nextYear] || PUJA_SCHEDULE_MAP[2027] || yearData;
+    activeYear = nextYear;
+    events = buildEventsForYear(activeYear, nextYearData);
+  }
+
+  return { year: activeYear, events };
 }
 
 export function calculateCountdown(now = new Date()): CountdownTime {
   const { events } = getUpcomingSchedule(now);
   const nowMs = now.getTime();
 
+  // Find the earliest upcoming event
   let targetEvent = events.find((e) => new Date(e.dateStr).getTime() > nowMs);
   if (!targetEvent) {
     targetEvent = events[0];

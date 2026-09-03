@@ -11,6 +11,8 @@ import {
   AlertCircle,
   ChevronUp,
   ChevronDown,
+  Tv,
+  X,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { musicState, PLAYLIST_TRACKS } from '../utils/musicState';
@@ -21,6 +23,8 @@ export function MusicPlayer() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const [showVideo, setShowVideo] = useState(false);
 
   const progressBarRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<number | null>(null);
@@ -39,9 +43,24 @@ export function MusicPlayer() {
     musicState.setPlayer(event.target);
     const dur = event.target.getDuration() || 0;
     musicState.setDuration(dur);
+    try {
+      event.target.unMute();
+    } catch {
+      // Ignore
+    }
     event.target.setVolume(state.volume);
     setHasError(false);
     setIsLoading(false);
+    if (state.isPlaying) {
+      try {
+        if (state.progress > 0) {
+          event.target.seekTo(state.progress, true);
+        }
+        event.target.playVideo();
+      } catch {
+        // Autoplay may need user gesture
+      }
+    }
   };
 
   const onStateChange: YouTubeProps['onStateChange'] = (event: YouTubeEvent) => {
@@ -143,7 +162,7 @@ export function MusicPlayer() {
                   বন্ধ করুন
                 </button>
               </div>
-              <div className="mt-2 space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar">
+              <div className="mt-2 space-y-1.5 max-h-64 sm:max-h-80 overflow-y-auto custom-scrollbar pr-1">
                 {PLAYLIST_TRACKS.map((t, idx) => (
                   <button
                     key={t.id}
@@ -151,20 +170,27 @@ export function MusicPlayer() {
                       musicState.selectTrack(idx);
                       setShowPlaylist(false);
                     }}
-                    className={`w-full text-left p-2.5 rounded-xl text-xs flex items-center justify-between transition-all ${
+                    className={`w-full text-left p-2.5 rounded-xl text-xs flex items-center justify-between transition-all cursor-pointer ${
                       state.currentTrackIndex === idx
                         ? 'bg-orange-500/25 border border-orange-400/40 text-orange-200'
                         : 'hover:bg-white/5 text-white/70'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-[10px] opacity-40">{idx + 1}</span>
-                      <div>
-                        <div className="font-semibold text-white/90">{t.titleBn}</div>
-                        <div className="text-[10px] text-white/50">{t.artist}</div>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="font-mono text-[10px] opacity-40 shrink-0">{idx + 1}</span>
+                      <div className="min-w-0">
+                        <div className="font-semibold text-white/90 truncate">{t.titleBn}</div>
+                        <div className="text-[10px] text-white/50 truncate">
+                          {t.artist}
+                          {t.startSeconds > 0 && (
+                            <span className="ml-1 text-amber-400/70 font-mono">
+                              ({Math.floor(t.startSeconds / 60)}:{(t.startSeconds % 60).toString().padStart(2, '0')})
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <span className="text-[10px] font-mono text-white/40">{t.durationEst}</span>
+                    <span className="text-[10px] font-mono text-white/40 shrink-0 ml-2">{t.durationEst}</span>
                   </button>
                 ))}
               </div>
@@ -279,11 +305,24 @@ export function MusicPlayer() {
             )}
           </div>
 
-          {/* Right: Playlist trigger & Mute */}
+          {/* Right: Playlist trigger, Video toggle & Mute */}
           <div className="hidden md:flex items-center gap-2.5 w-auto justify-end">
             <button
+              onClick={() => setShowVideo((prev) => !prev)}
+              className={`px-3 py-1.5 rounded-full text-[10px] uppercase tracking-wider font-semibold border flex items-center gap-1.5 transition-colors cursor-pointer ${
+                showVideo
+                  ? 'bg-amber-500/30 border-amber-400 text-amber-200'
+                  : 'bg-white/5 hover:bg-white/10 border-white/15 text-white/70 hover:text-white'
+              }`}
+              title="ভিডিও স্ক্রিন"
+            >
+              <Tv size={13} />
+              <span>{showVideo ? 'ভিডিও বন্ধ' : 'ভিডিও'}</span>
+            </button>
+
+            <button
               onClick={() => setShowPlaylist((prev) => !prev)}
-              className={`px-3 py-1.5 rounded-full text-[10px] uppercase tracking-wider font-semibold border flex items-center gap-1.5 transition-colors ${
+              className={`px-3 py-1.5 rounded-full text-[10px] uppercase tracking-wider font-semibold border flex items-center gap-1.5 transition-colors cursor-pointer ${
                 showPlaylist
                   ? 'bg-orange-500/30 border-orange-400 text-orange-200'
                   : 'bg-white/5 hover:bg-white/10 border-white/15 text-white/70 hover:text-white'
@@ -295,7 +334,7 @@ export function MusicPlayer() {
 
             <button
               onClick={() => musicState.toggleMute()}
-              className={`p-1.5 rounded-full border transition-colors ${
+              className={`p-1.5 rounded-full border transition-colors cursor-pointer ${
                 state.isMuted
                   ? 'bg-red-500/20 border-red-500/40 text-red-300'
                   : 'bg-white/5 hover:bg-white/10 border-white/15 text-white/70 hover:text-white'
@@ -309,24 +348,47 @@ export function MusicPlayer() {
         </div>
       </div>
 
-      {/* Hidden YouTube Iframe Player */}
-      <div className="absolute w-[1px] h-[1px] opacity-0 pointer-events-none overflow-hidden -z-50">
-        <YouTube
-          videoId={currentTrack.youtubeId}
-          opts={{
-            playerVars: {
-              autoplay: 0,
-              controls: 0,
-              disablekb: 1,
-              fs: 0,
-              modestbranding: 1,
-              rel: 0,
-            },
-          }}
-          onReady={onReady}
-          onStateChange={onStateChange}
-          onError={onError}
-        />
+      {/* YouTube Player Container (kept in-viewport to guarantee Chromium audio decoding pipeline never suspends) */}
+      <div
+        className={`fixed bottom-24 right-4 z-50 w-72 sm:w-80 p-2.5 rounded-2xl bg-black/95 border border-orange-500/40 shadow-2xl backdrop-blur-xl transition-all duration-300 ${
+          showVideo
+            ? 'opacity-100 scale-100 pointer-events-auto'
+            : 'opacity-0 scale-95 pointer-events-none'
+        }`}
+        style={!showVideo ? { opacity: 0.001, transform: 'scale(0.8)' } : undefined}
+      >
+        <div className="flex items-center justify-between pb-2 px-1 border-b border-white/10 text-xs text-white/80">
+          <span className="font-serif font-semibold truncate text-amber-200">
+            {currentTrack.titleBn}
+          </span>
+          <button
+            onClick={() => setShowVideo(false)}
+            className="p-1 hover:bg-white/10 rounded-lg text-white/60 hover:text-white transition-colors cursor-pointer"
+            title="ভিডিও মিনিমাইজ করুন"
+          >
+            <X size={14} />
+          </button>
+        </div>
+        <div className="w-full aspect-video rounded-xl overflow-hidden mt-2 bg-black border border-white/10">
+          <YouTube
+            videoId={currentTrack.youtubeId}
+            opts={{
+              width: '100%',
+              height: '100%',
+              playerVars: {
+                autoplay: 1,
+                controls: 1,
+                playsinline: 1,
+                modestbranding: 1,
+                rel: 0,
+              },
+            }}
+            onReady={onReady}
+            onStateChange={onStateChange}
+            onError={onError}
+            className="w-full h-full"
+          />
+        </div>
       </div>
     </div>
   );
