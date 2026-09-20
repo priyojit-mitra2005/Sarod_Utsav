@@ -46,14 +46,14 @@ export function GreetingModal({ isOpen, onClose }: GreetingModalProps) {
 
   const handleWhatsApp = () => {
     const text = encodeURIComponent(getFullMessage());
-    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank', 'noopener,noreferrer');
   };
 
   const handleTwitter = () => {
     const text = encodeURIComponent(
       `${GREETING_PRESETS[selectedIndex].text} #DurgaPuja #Mahalaya #SubhoSarodiya`
     );
-    window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+    window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -107,7 +107,8 @@ export function GreetingModal({ isOpen, onClose }: GreetingModalProps) {
               <input
                 type="text"
                 value={senderName}
-                onChange={(e) => setSenderName(e.target.value)}
+                onChange={(e) => setSenderName(e.target.value.slice(0, 50))}
+                maxLength={50}
                 placeholder="যেমন: অনির্বাণ / Anirban"
                 className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/15 text-sm text-white placeholder-white/30 focus:outline-none focus:border-orange-400 transition-colors"
               />
