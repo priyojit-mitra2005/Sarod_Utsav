@@ -16,8 +16,10 @@ class AudioEngine {
   private isDhakPlaying = false;
   private dhakInterval: number | null = null;
   private currentPattern: DhaakPatternType = 'aarti';
+  private currentVolume = 0.9;
   private listeners: Set<(isPlaying: boolean) => void> = new Set();
   private patternListeners: Set<(pattern: DhaakPatternType) => void> = new Set();
+  private beatListeners: Set<(step: number) => void> = new Set();
 
   private getContext(): AudioContext {
     if (!this.ctx) {
@@ -52,12 +54,23 @@ class AudioEngine {
 
       // Boosted master gain for high audibility across all mobile & laptop speakers
       this.masterGain = ctx.createGain();
-      this.masterGain.gain.setValueAtTime(1.7, ctx.currentTime);
+      this.masterGain.gain.setValueAtTime(this.currentVolume * 1.8, ctx.currentTime);
 
       this.compressor.connect(this.masterGain);
       this.masterGain.connect(ctx.destination);
     }
     return this.compressor;
+  }
+
+  public setVolume(vol: number) {
+    this.currentVolume = Math.max(0, Math.min(1, vol));
+    if (this.masterGain && this.ctx) {
+      this.masterGain.gain.setValueAtTime(this.currentVolume * 1.8, this.ctx.currentTime);
+    }
+  }
+
+  public getVolume(): number {
+    return this.currentVolume;
   }
 
   public subscribeDhakState(callback: (isPlaying: boolean) => void): () => void {
@@ -76,6 +89,13 @@ class AudioEngine {
     };
   }
 
+  public subscribeBeat(callback: (step: number) => void): () => void {
+    this.beatListeners.add(callback);
+    return () => {
+      this.beatListeners.delete(callback);
+    };
+  }
+
   private notifyDhakState() {
     this.listeners.forEach((cb) => cb(this.isDhakPlaying));
   }
@@ -84,11 +104,17 @@ class AudioEngine {
     this.patternListeners.forEach((cb) => cb(this.currentPattern));
   }
 
-  public setPattern(pattern: DhaakPatternType) {
+  private notifyBeat(step: number) {
+    this.beatListeners.forEach((cb) => cb(step));
+  }
+
+  public setPattern(pattern: DhaakPatternType, autoPlay = true) {
     this.currentPattern = pattern;
     this.notifyPattern();
     if (this.isDhakPlaying) {
       this.stopDhaakRhythm();
+      this.startDhaakRhythm();
+    } else if (autoPlay) {
       this.startDhaakRhythm();
     }
   }
@@ -110,7 +136,7 @@ class AudioEngine {
       const master = this.getMasterNode();
       const now = ctx.currentTime + timeOffset;
 
-      // 1. Drum body fundamental (160Hz -> 105Hz, perfectly audible on small speakers)
+      // 1. Drum body fundamental (180Hz -> 90Hz wooden boom)
       const oscLow = ctx.createOscillator();
       const gainLow = ctx.createGain();
       oscLow.type = 'triangle';
@@ -311,11 +337,11 @@ class AudioEngine {
     }
   }
 
-  public toggleDhaakRhythm() {
+  public async toggleDhaakRhythm() {
     if (this.isDhakPlaying) {
       this.stopDhaakRhythm();
     } else {
-      this.startDhaakRhythm();
+      await this.startDhaakRhythm();
     }
   }
 
@@ -325,9 +351,9 @@ class AudioEngine {
    * 2. 'agomoni': Majestic slow morning Bodhon entrance beat
    * 3. 'bisarjan': Fast celebratory procession groove
    */
-  public startDhaakRhythm() {
+  public async startDhaakRhythm() {
     if (this.isDhakPlaying) return;
-    this.resume();
+    await this.resume();
     this.isDhakPlaying = true;
     this.notifyDhakState();
 
@@ -344,6 +370,7 @@ class AudioEngine {
     const tick = () => {
       if (!this.isDhakPlaying) return;
       const beat = step % 16;
+      this.notifyBeat(beat);
 
       if (this.currentPattern === 'aarti') {
         // Authentic Dhunuchi Aarti Bol:

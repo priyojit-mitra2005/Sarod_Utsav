@@ -73,8 +73,10 @@ export default function App() {
       soundEngine.stopDhaakRhythm();
     } else {
       await soundEngine.resume();
+      if (musicStateData.isPlaying) {
+        musicState.togglePlay();
+      }
       soundEngine.startDhaakRhythm();
-      musicState.playDhakTrack();
     }
   };
 
